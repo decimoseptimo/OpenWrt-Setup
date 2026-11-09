@@ -1,24 +1,33 @@
-# OpenWrt proxy server setup
+# OpenWrt initial setup
 
-This guide is for setting up a proxy server from a fresh OpenWrt install. It features an opionated provisioning in a sensible order. I've chosen sing-box as the engine, and Shadowsocks & XTLS-Reality as the protocols. Skip to the last part if you only care about proxy setup. I only briefly discuss the rest of the operations which are meant to be done through LUCI, as I provide linking to the official guides.
+This guide is for setting up OpenWrt from a fresh install. It features an opionated provisioning with DuckDNS, Adblock-fast & WireGuard. Optionally a sing-box server with Shadowsocks & XTLS-Reality protocols. Skip to the last part if you only care about proxy setup. 
 
 If you need a proxy client, take a look at home-proxy, although not an official package, the manual installation steps from its repo are good.
 
-DISCLAIMER: I've written this mainly for my personal use, but I put it out there as it may be useful for someone else.
+CLI provisioning is recommended (UCI), but I also briefly discuss GUI setup (LUCI) were I link to the official guides.
 
-## Default configuration
+DISCLAIMER: I've written this mainly for my personal use, as a former Gargoyle-router user, I put it out there as it may be useful for someone else.
 
-ip 192.168.1.1
-user root
-no password
-wifi disabled
+##### OpenWrt's default configuration
 
-## Configurations
+ip 192.168.1.1, user root, no password
+
+## UCI setup
+
+```bash
+git clone https://github.com/decimoseptimo/OpenWrt-Setup.git
+cd OpenWrt-Setup
+mv secrets.env.example secrets.env
+# Fill-in secrets in secrets.env
+sh provision.sh
+```
+
+## GUI setup
 
 Set system password
 Set timezone
-Change lan ip 192.168.2.1/24
-[Setup wireless networks and attach to lan network](https://openwrt.org/docs/guide-quick-start/basic_wifi)
+Change lan ip 192.168.1.1/24
+[Setup wireless networks and attach to lan network](https://openwrt.org/docs/guide-quick-start/basic_wifi) 
 
 ##### [Setup ddns](https://openwrt.org/docs/guide-user/services/ddns/client)
 
@@ -58,17 +67,30 @@ Add wg interface
 Add peers
 Add firewall zone
 Add firewall traffic rule
+
+```bash
+uci add firewall rule
+uci set firewall.@rule[-1].name='Allow-WireGuard'
+uci set firewall.@rule[-1].src='wan'
+uci set firewall.@rule[-1].dest_port='51820'
+uci set firewall.@rule[-1].proto='udp'
+uci set firewall.@rule[-1].target='ACCEPT'
+uci commit firewall
+/etc/init.d/firewall restart
+```
+
 Test peers connection
 
-##### Setup proxies on :8080 (Shadowsocks) & :443 (XTLS-Reality)
+##### Setup proxies on :8080 (Shadowsocks) & :4433 (XTLS-Reality)
 
 *Enable port forwarding at gateway
 Add firewall rule
 
 ```bash
+uci add firewall rule
 uci set firewall.@rule[-1].name='Allow-Proxies'
 uci set firewall.@rule[-1].src='wan'
-uci set firewall.@rule[-1].dest_port='8080 443'
+uci set firewall.@rule[-1].dest_port='8080 4433'
 uci set firewall.@rule[-1].proto='tcp udp'
 uci set firewall.@rule[-1].target='ACCEPT'
 uci commit firewall
@@ -107,7 +129,7 @@ Configure `/etc/sing-box/config.json`, sample with shadowsocks single user & rea
       "type": "vless",
       "tag": "reality-in",
       "listen": "::",
-      "listen_port": 443,
+      "listen_port": 4433,
       "users": [
         {
           "name": "USER_NAME",
@@ -122,7 +144,7 @@ Configure `/etc/sing-box/config.json`, sample with shadowsocks single user & rea
           "enabled": true,
           "handshake": {
             "server": "www.apple.com",
-            "server_port": 443
+            "server_port": 433
           },
           "private_key": "REALITY_PRIVATE_KEY",
           "short_id": [
