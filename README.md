@@ -12,7 +12,7 @@ DISCLAIMER: I've written this mainly for my personal use, as a former Gargoyle-r
 
 ip 192.168.1.1, user root, no password
 
-## UCI setup
+## UCI setup (recommended)
 
 ```bash
 git clone https://github.com/decimoseptimo/OpenWrt-Setup.git
